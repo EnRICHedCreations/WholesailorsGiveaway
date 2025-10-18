@@ -283,6 +283,20 @@
                     <textarea id="rewardsInput" rows="5" placeholder="Free Course&#10;$50 Gift Card&#10;1 Month Free Membership&#10;Exclusive Webinar Access" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white placeholder-gray-600"></textarea>
                     <p class="text-xs text-gray-500 mt-1">Each person who enters will randomly win one of these rewards</p>
                 </div>
+                <div id="lootboxPrice" class="mb-4 hidden">
+                    <label class="flex items-center space-x-2 cursor-pointer mb-2">
+                        <input type="checkbox" id="requirePayment" class="w-4 h-4 text-yellow-600 bg-zinc-800 border-gray-700 rounded focus:ring-yellow-600">
+                        <span class="text-gray-400 font-semibold">Require Payment to Enter?</span>
+                    </label>
+                    <div id="priceField" class="hidden">
+                        <label class="block text-gray-400 font-semibold mb-2">Entry Price (USD)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                            <input type="number" id="entryPrice" min="0" step="0.01" placeholder="9.99" class="w-full pl-8 pr-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white" />
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Users must pay this amount to enter the loot box</p>
+                    </div>
+                </div>
                 <div class="mb-4">
                     <label class="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" id="annualMemberOnly" class="w-4 h-4 text-yellow-600 bg-zinc-800 border-gray-700 rounded focus:ring-yellow-600">
@@ -515,7 +529,7 @@
                             <div class="flex items-center space-x-2">
                                 ${giveaway.type === 'lootbox' ? `
                                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                        🎁 LOOTBOX
+                                        🎁 LOOTBOX${giveaway.requirePayment ? ` - $${giveaway.price.toFixed(2)}` : ''}
                                     </span>
                                 ` : ''}
                                 ${giveaway.annualMemberOnly ? `
@@ -608,9 +622,20 @@
         // Toggle lootbox rewards field
         document.getElementById('typeSpinner').addEventListener('change', () => {
             document.getElementById('lootboxRewards').classList.add('hidden');
+            document.getElementById('lootboxPrice').classList.add('hidden');
         });
         document.getElementById('typeLootbox').addEventListener('change', () => {
             document.getElementById('lootboxRewards').classList.remove('hidden');
+            document.getElementById('lootboxPrice').classList.remove('hidden');
+        });
+
+        // Toggle price field
+        document.getElementById('requirePayment').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.getElementById('priceField').classList.remove('hidden');
+            } else {
+                document.getElementById('priceField').classList.add('hidden');
+            }
         });
 
         window.closeCreateModal = function() {
@@ -620,7 +645,11 @@
             document.getElementById('annualMemberOnly').checked = false;
             document.getElementById('typeSpinner').checked = true;
             document.getElementById('rewardsInput').value = '';
+            document.getElementById('requirePayment').checked = false;
+            document.getElementById('entryPrice').value = '';
             document.getElementById('lootboxRewards').classList.add('hidden');
+            document.getElementById('lootboxPrice').classList.add('hidden');
+            document.getElementById('priceField').classList.add('hidden');
         };
 
         window.createGiveaway = async function() {
@@ -629,6 +658,8 @@
             const annualMemberOnly = document.getElementById('annualMemberOnly').checked;
             const type = document.querySelector('input[name="giveawayType"]:checked').value;
             const rewardsText = document.getElementById('rewardsInput').value;
+            const requirePayment = document.getElementById('requirePayment').checked;
+            const entryPrice = document.getElementById('entryPrice').value;
 
             if (!name || !description) {
                 alert('Please fill in all fields');
@@ -637,6 +668,11 @@
 
             if (type === 'lootbox' && !rewardsText.trim()) {
                 alert('Please enter at least one reward for the loot box');
+                return;
+            }
+
+            if (type === 'lootbox' && requirePayment && (!entryPrice || parseFloat(entryPrice) <= 0)) {
+                alert('Please enter a valid entry price');
                 return;
             }
 
@@ -652,6 +688,10 @@
 
             if (type === 'lootbox') {
                 giveawayData.rewards = rewardsText.split('\n').filter(r => r.trim()).map(r => r.trim());
+                giveawayData.requirePayment = requirePayment;
+                if (requirePayment) {
+                    giveawayData.price = parseFloat(entryPrice);
+                }
             }
 
             await addDoc(collection(db, 'giveaways'), giveawayData);
