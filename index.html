@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wholesailors Giveaways - Win Amazing Prizes</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
     <style>
         body {
             background-color: #171717;
@@ -62,6 +63,36 @@
             </div>
         </div>
     </section>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800">
+            <h2 class="text-2xl font-bold text-white mb-2">Complete Payment</h2>
+            <p class="text-gray-400 mb-6">Enter your payment details to enter the loot box</p>
+
+            <div class="mb-6">
+                <div class="bg-zinc-800 border border-gray-700 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-400">Entry Fee:</span>
+                        <span class="text-white font-bold text-xl" id="paymentAmount">$0.00</span>
+                    </div>
+                    <div class="text-xs text-gray-500">Guaranteed reward upon entry</div>
+                </div>
+            </div>
+
+            <div id="card-element" class="p-4 bg-zinc-800 border border-gray-700 rounded-lg mb-4"></div>
+            <div id="card-errors" class="text-red-400 text-sm mb-4 hidden"></div>
+
+            <div class="flex space-x-3">
+                <button onclick="closePaymentModal()" class="flex-1 px-6 py-3 border-2 border-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-800 transition">
+                    Cancel
+                </button>
+                <button id="paymentSubmitBtn" onclick="handlePayment()" class="flex-1 px-6 py-3 gradient-gold text-white font-semibold rounded-lg hover:opacity-90 transition">
+                    Pay Now
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Lootbox Modal -->
     <div id="lootboxModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -151,6 +182,9 @@
 
         let currentGiveaway = null;
         let allGiveaways = [];
+        let stripe = null;
+        let cardElement = null;
+        let pendingEntryData = null;
 
         // Load giveaways
         async function loadGiveaways() {
@@ -186,10 +220,16 @@
                                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                                 </svg>
-                                ${isLootbox ? '<span class="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-bold">🎁 LOOT BOX</span>' : ''}
+                                ${isLootbox ? `<span class="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-bold">🎁 LOOT BOX${giveaway.requirePayment ? ` - $${giveaway.price.toFixed(2)}` : ''}</span>` : ''}
                             </div>
                             <h3 class="text-2xl font-bold text-white mb-2">${giveaway.name}</h3>
                             <p class="text-gray-200">${giveaway.description}</p>
+                            ${isLootbox && giveaway.requirePayment ? `
+                                <div class="mt-4 pt-4 border-t border-white/20">
+                                    <p class="text-white text-sm font-semibold">💰 Entry Fee: $${giveaway.price.toFixed(2)}</p>
+                                    <p class="text-white/80 text-xs mt-1">Guaranteed to win a reward!</p>
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="p-6">
                             ${giveaway.annualMemberOnly ? `
@@ -322,21 +362,25 @@
 
                 // Handle lootbox giveaway
                 if (currentGiveaway.type === 'lootbox') {
-                    const wonReward = currentGiveaway.rewards[Math.floor(Math.random() * currentGiveaway.rewards.length)];
+                    // Check if payment is required
+                    if (currentGiveaway.requirePayment) {
+                        pendingEntryData = {
+                            name: name.trim(),
+                            email: email,
+                            memberData: memberCheck.data
+                        };
+                        closeModal();
+                        document.getElementById('paymentAmount').textContent = `$${currentGiveaway.price.toFixed(2)}`;
+                        document.getElementById('paymentModal').classList.remove('hidden');
+                        return;
+                    }
 
-                    await addDoc(collection(db, 'entries'), {
-                        giveawayId: currentGiveaway.id,
-                        giveawayName: currentGiveaway.name,
+                    // Free lootbox entry
+                    await processLootboxEntry({
                         name: name.trim(),
                         email: email,
-                        timestamp: new Date().toISOString(),
-                        memberData: memberCheck.data,
-                        reward: wonReward
+                        memberData: memberCheck.data
                     });
-
-                    // Show lootbox animation
-                    closeModal();
-                    showLootboxAnimation(currentGiveaway.rewards, wonReward);
                     return;
                 }
 
@@ -400,6 +444,100 @@
             document.getElementById('lootboxAnimation').classList.remove('hidden');
         };
 
+        window.closePaymentModal = function() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            document.getElementById('card-errors').classList.add('hidden');
+            pendingEntryData = null;
+        };
+
+        // Initialize Stripe
+        function initializeStripe() {
+            // Replace with your Stripe publishable key
+            stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE');
+            const elements = stripe.elements();
+            cardElement = elements.create('card', {
+                style: {
+                    base: {
+                        color: '#ffffff',
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        fontSize: '16px',
+                        '::placeholder': {
+                            color: '#6b7280'
+                        }
+                    },
+                    invalid: {
+                        color: '#ef4444'
+                    }
+                }
+            });
+            cardElement.mount('#card-element');
+
+            cardElement.on('change', (event) => {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    displayError.classList.remove('hidden');
+                } else {
+                    displayError.textContent = '';
+                    displayError.classList.add('hidden');
+                }
+            });
+        }
+
+        // Handle payment
+        window.handlePayment = async function() {
+            if (!pendingEntryData) return;
+
+            const submitBtn = document.getElementById('paymentSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            try {
+                // Create payment intent on server (you'll need to implement this endpoint)
+                const response = await fetch('/create-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: Math.round(currentGiveaway.price * 100), // Stripe uses cents
+                        giveawayId: currentGiveaway.id
+                    })
+                });
+
+                const { clientSecret } = await response.json();
+
+                // Confirm payment
+                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            email: pendingEntryData.email
+                        }
+                    }
+                });
+
+                if (error) {
+                    const displayError = document.getElementById('card-errors');
+                    displayError.textContent = error.message;
+                    displayError.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Pay Now';
+                    return;
+                }
+
+                if (paymentIntent.status === 'succeeded') {
+                    // Payment successful, process entry
+                    closePaymentModal();
+                    await processLootboxEntry(pendingEntryData);
+                }
+
+            } catch (error) {
+                console.error('Payment error:', error);
+                alert('Payment failed. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Pay Now';
+            }
+        };
+
         // Close modal
         window.closeModal = function() {
             document.getElementById('entryModal').classList.add('hidden');
@@ -416,6 +554,26 @@
         document.getElementById('emailInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.submitEntry();
         });
+
+        // Process lootbox entry
+        async function processLootboxEntry(entryData) {
+            const wonReward = currentGiveaway.rewards[Math.floor(Math.random() * currentGiveaway.rewards.length)];
+
+            await addDoc(collection(db, 'entries'), {
+                giveawayId: currentGiveaway.id,
+                giveawayName: currentGiveaway.name,
+                name: entryData.name,
+                email: entryData.email,
+                timestamp: new Date().toISOString(),
+                memberData: entryData.memberData,
+                reward: wonReward,
+                paid: currentGiveaway.requirePayment || false,
+                amount: currentGiveaway.requirePayment ? currentGiveaway.price : 0
+            });
+
+            closeModal();
+            showLootboxAnimation(currentGiveaway.rewards, wonReward);
+        }
 
         // Lootbox animation
         function showLootboxAnimation(rewards, wonReward) {
@@ -445,6 +603,7 @@
 
         // Load on start
         loadGiveaways();
+        initializeStripe();
     </script>
 </body>
 </html>
