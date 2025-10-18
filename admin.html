@@ -19,6 +19,25 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        /* Custom scrollbar for entries list and modals */
+        #entriesList::-webkit-scrollbar,
+        .max-h-\[70vh\]::-webkit-scrollbar {
+            width: 8px;
+        }
+        #entriesList::-webkit-scrollbar-track,
+        .max-h-\[70vh\]::-webkit-scrollbar-track {
+            background: #27272a;
+            border-radius: 4px;
+        }
+        #entriesList::-webkit-scrollbar-thumb,
+        .max-h-\[70vh\]::-webkit-scrollbar-thumb {
+            background: #52525b;
+            border-radius: 4px;
+        }
+        #entriesList::-webkit-scrollbar-thumb:hover,
+        .max-h-\[70vh\]::-webkit-scrollbar-thumb:hover {
+            background: #71717a;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -168,33 +187,56 @@
                     </div>
 
                     <div id="winnerSection" class="hidden">
-                        <div class="text-center">
-                            <div class="relative w-96 h-96 mx-auto mb-8">
-                                <!-- Pointer -->
-                                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-8 z-20">
-                                    <div class="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[30px] border-l-transparent border-r-transparent border-t-red-500 drop-shadow-lg"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Wheel Section -->
+                            <div class="lg:col-span-2">
+                                <div class="text-center">
+                                    <div class="relative w-96 h-96 mx-auto mb-8">
+                                        <!-- Pointer -->
+                                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-8 z-20">
+                                            <div class="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[30px] border-l-transparent border-r-transparent border-t-red-500 drop-shadow-lg"></div>
+                                        </div>
+
+                                        <!-- Spinning Wheel -->
+                                        <svg id="wheelSpinner" class="w-full h-full" viewBox="0 0 400 400" style="transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);">
+                                            <g id="wheelSegments"></g>
+
+                                            <!-- Center Circle -->
+                                            <circle cx="200" cy="200" r="30" fill="#171717" stroke="#b79956" stroke-width="4"/>
+                                            <circle cx="200" cy="200" r="15" fill="#b79956"/>
+                                        </svg>
+                                    </div>
+
+                                    <div class="flex space-x-4 justify-center mb-8">
+                                        <button id="shuffleBtn" onclick="shuffleWheel()" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition">
+                                            🔀 Shuffle Wheel
+                                        </button>
+                                        <button id="spinBtn" onclick="spinWheel()" class="px-8 py-4 gradient-gold text-white font-bold text-xl rounded-xl hover:opacity-90 transition">
+                                            Spin to Win!
+                                        </button>
+                                    </div>
+
+                                    <div id="winnerDisplay" class="hidden gradient-gold rounded-2xl p-8 text-white">
+                                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        </svg>
+                                        <h3 class="text-3xl font-bold mb-2">🎉 Winner! 🎉</h3>
+                                        <p id="winnerEmail" class="text-2xl font-semibold"></p>
+                                    </div>
                                 </div>
-
-                                <!-- Spinning Wheel -->
-                                <svg id="wheelSpinner" class="w-full h-full" viewBox="0 0 400 400" style="transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);">
-                                    <g id="wheelSegments"></g>
-
-                                    <!-- Center Circle -->
-                                    <circle cx="200" cy="200" r="30" fill="#171717" stroke="#b79956" stroke-width="4"/>
-                                    <circle cx="200" cy="200" r="15" fill="#b79956"/>
-                                </svg>
                             </div>
 
-                            <button id="spinBtn" onclick="spinWheel()" class="px-8 py-4 gradient-gold text-white font-bold text-xl rounded-xl hover:opacity-90 transition mb-8">
-                                Spin to Win!
-                            </button>
-
-                            <div id="winnerDisplay" class="hidden gradient-gold rounded-2xl p-8 text-white">
-                                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                                </svg>
-                                <h3 class="text-3xl font-bold mb-2">🎉 Winner! 🎉</h3>
-                                <p id="winnerEmail" class="text-2xl font-semibold"></p>
+                            <!-- Entries Sidebar -->
+                            <div class="lg:col-span-1">
+                                <div class="bg-zinc-800 rounded-xl border border-gray-700 p-4">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-white font-bold text-lg">Entries</h4>
+                                        <span id="entriesCount" class="px-3 py-1 bg-gray-700 rounded-full text-sm font-semibold text-gray-300">0</span>
+                                    </div>
+                                    <div id="entriesList" class="space-y-2 max-h-[500px] overflow-y-auto">
+                                        <!-- Entries will be populated here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -211,10 +253,10 @@
     </div>
 
     <!-- Create Giveaway Modal -->
-    <div id="createModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800">
+    <div id="createModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 my-8">
             <h2 class="text-2xl font-bold text-white mb-6">Create New Giveaway</h2>
-            <div>
+            <div class="max-h-[70vh] overflow-y-auto pr-2">
                 <div class="mb-4">
                     <label class="block text-gray-400 font-semibold mb-2">Name</label>
                     <input type="text" id="giveawayName" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white" />
@@ -222,6 +264,24 @@
                 <div class="mb-4">
                     <label class="block text-gray-400 font-semibold mb-2">Description</label>
                     <textarea id="giveawayDescription" rows="3" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-400 font-semibold mb-2">Giveaway Type</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="giveawayType" value="spinner" id="typeSpinner" checked class="w-4 h-4 text-yellow-600">
+                            <span class="text-gray-300">🎡 Spinner (One Winner)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="giveawayType" value="lootbox" id="typeLootbox" class="w-4 h-4 text-yellow-600">
+                            <span class="text-gray-300">🎁 Loot Box (Everyone Wins)</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="lootboxRewards" class="mb-4 hidden">
+                    <label class="block text-gray-400 font-semibold mb-2">Rewards (one per line)</label>
+                    <textarea id="rewardsInput" rows="5" placeholder="Free Course&#10;$50 Gift Card&#10;1 Month Free Membership&#10;Exclusive Webinar Access" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white placeholder-gray-600"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Each person who enters will randomly win one of these rewards</p>
                 </div>
                 <div class="mb-4">
                     <label class="flex items-center space-x-2 cursor-pointer">
@@ -243,10 +303,10 @@
     </div>
 
     <!-- Edit Giveaway Modal -->
-    <div id="editModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800">
+    <div id="editModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 my-8">
             <h2 class="text-2xl font-bold text-white mb-6">Edit Giveaway</h2>
-            <div>
+            <div class="max-h-[70vh] overflow-y-auto pr-2">
                 <div class="mb-4">
                     <label class="block text-gray-400 font-semibold mb-2">Name</label>
                     <input type="text" id="editGiveawayName" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white" />
@@ -305,6 +365,8 @@
         let entries = [];
         let currentRotation = 0;
         let currentEditGiveawayId = null;
+        let currentGiveawayEntries = [];
+        let selectedWinners = [];
 
         // Check authentication state
         onAuthStateChanged(auth, (user) => {
@@ -451,6 +513,11 @@
                                 <p class="text-gray-400">${giveaway.description}</p>
                             </div>
                             <div class="flex items-center space-x-2">
+                                ${giveaway.type === 'lootbox' ? `
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                        🎁 LOOTBOX
+                                    </span>
+                                ` : ''}
                                 ${giveaway.annualMemberOnly ? `
                                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
                                         ANNUAL ONLY
@@ -495,6 +562,7 @@
                                         <div class="text-sm text-gray-400 bg-zinc-800 p-2 rounded">
                                             <div class="font-semibold text-white">${entry.name || entry.email}</div>
                                             ${entry.name ? `<div class="text-xs text-gray-500">${entry.email}</div>` : ''}
+                                            ${entry.reward ? `<div class="text-xs text-green-400 mt-1">🎁 Won: ${entry.reward}</div>` : ''}
                                         </div>
                                     `).join('')}
                                 </div>
@@ -537,31 +605,56 @@
             document.getElementById('createModal').classList.remove('hidden');
         };
 
+        // Toggle lootbox rewards field
+        document.getElementById('typeSpinner').addEventListener('change', () => {
+            document.getElementById('lootboxRewards').classList.add('hidden');
+        });
+        document.getElementById('typeLootbox').addEventListener('change', () => {
+            document.getElementById('lootboxRewards').classList.remove('hidden');
+        });
+
         window.closeCreateModal = function() {
             document.getElementById('createModal').classList.add('hidden');
             document.getElementById('giveawayName').value = '';
             document.getElementById('giveawayDescription').value = '';
             document.getElementById('annualMemberOnly').checked = false;
+            document.getElementById('typeSpinner').checked = true;
+            document.getElementById('rewardsInput').value = '';
+            document.getElementById('lootboxRewards').classList.add('hidden');
         };
 
         window.createGiveaway = async function() {
             const name = document.getElementById('giveawayName').value;
             const description = document.getElementById('giveawayDescription').value;
             const annualMemberOnly = document.getElementById('annualMemberOnly').checked;
+            const type = document.querySelector('input[name="giveawayType"]:checked').value;
+            const rewardsText = document.getElementById('rewardsInput').value;
 
             if (!name || !description) {
                 alert('Please fill in all fields');
                 return;
             }
 
-            await addDoc(collection(db, 'giveaways'), {
+            if (type === 'lootbox' && !rewardsText.trim()) {
+                alert('Please enter at least one reward for the loot box');
+                return;
+            }
+
+            const giveawayData = {
                 name,
                 description,
                 status: 'active',
+                type: type,
                 annualMemberOnly: annualMemberOnly,
                 createdAt: new Date().toISOString(),
                 entryCount: 0
-            });
+            };
+
+            if (type === 'lootbox') {
+                giveawayData.rewards = rewardsText.split('\n').filter(r => r.trim()).map(r => r.trim());
+            }
+
+            await addDoc(collection(db, 'giveaways'), giveawayData);
 
             closeCreateModal();
             await loadData();
@@ -631,17 +724,23 @@
             }
         };
 
-        // Generate wheel colors
+        // Generate wheel colors - vibrant RGB spectrum
         function generateColors(count) {
             const colors = [
-                ['#b79956', '#6c5530'],
-                ['#8b4513', '#654321'],
-                ['#daa520', '#b8860b'],
-                ['#cd853f', '#8b6914'],
-                ['#d4af37', '#9b7b1f'],
-                ['#c9a15a', '#8b7355'],
-                ['#e6be8a', '#c19a6b'],
-                ['#a67c00', '#7b5900']
+                ['#ef4444', '#dc2626'], // Red
+                ['#f97316', '#ea580c'], // Orange
+                ['#eab308', '#ca8a04'], // Yellow
+                ['#84cc16', '#65a30d'], // Lime
+                ['#22c55e', '#16a34a'], // Green
+                ['#14b8a6', '#0d9488'], // Teal
+                ['#06b6d4', '#0891b2'], // Cyan
+                ['#3b82f6', '#2563eb'], // Blue
+                ['#6366f1', '#4f46e5'], // Indigo
+                ['#8b5cf6', '#7c3aed'], // Violet
+                ['#a855f7', '#9333ea'], // Purple
+                ['#d946ef', '#c026d3'], // Fuchsia
+                ['#ec4899', '#db2777'], // Pink
+                ['#f43f5e', '#e11d48']  // Rose
             ];
 
             const result = [];
@@ -743,6 +842,33 @@
             }
         }
 
+        // Update entries list
+        function updateEntriesList(giveawayEntries) {
+            const entriesList = document.getElementById('entriesList');
+            const entriesCount = document.getElementById('entriesCount');
+
+            entriesCount.textContent = giveawayEntries.length;
+
+            if (giveawayEntries.length === 0) {
+                entriesList.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No entries yet</p>';
+                return;
+            }
+
+            entriesList.innerHTML = giveawayEntries.map((entry, index) => `
+                <div class="p-3 bg-zinc-900 rounded-lg border border-gray-700 hover:border-gray-600 transition">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-xs font-bold text-gray-300">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-white font-semibold text-sm truncate">${entry.name || `Entry #${index + 1}`}</p>
+                            ${entry.reward ? `<p class="text-green-400 text-xs truncate mt-1">🎁 ${entry.reward}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // Winner selection
         document.getElementById('winnerGiveawaySelect').addEventListener('change', (e) => {
             const giveawayId = e.target.value;
@@ -759,13 +885,15 @@
                 return;
             }
 
-            const giveawayEntries = entries.filter(e => e.giveawayId === giveawayId);
+            currentGiveawayEntries = entries.filter(e => e.giveawayId === giveawayId);
+            selectedWinners = [];
 
-            if (giveawayEntries.length === 0) {
+            if (currentGiveawayEntries.length === 0) {
                 winnerSection.classList.add('hidden');
                 noEntriesMsg.classList.remove('hidden');
             } else {
-                drawWheel(giveawayEntries);
+                drawWheel(currentGiveawayEntries);
+                updateEntriesList(currentGiveawayEntries);
                 winnerSection.classList.remove('hidden');
                 noEntriesMsg.classList.add('hidden');
 
@@ -779,26 +907,69 @@
             }
         });
 
+        // Shuffle wheel
+        window.shuffleWheel = function() {
+            if (currentGiveawayEntries.length === 0) return;
+
+            // Filter out already selected winners
+            const availableEntries = currentGiveawayEntries.filter(entry =>
+                !selectedWinners.some(winner => winner.email === entry.email)
+            );
+
+            if (availableEntries.length === 0) {
+                alert('All entries have been selected as winners!');
+                return;
+            }
+
+            // Shuffle array using Fisher-Yates algorithm
+            for (let i = availableEntries.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [availableEntries[i], availableEntries[j]] = [availableEntries[j], availableEntries[i]];
+            }
+
+            currentGiveawayEntries = availableEntries;
+            drawWheel(availableEntries);
+            updateEntriesList(availableEntries);
+
+            // Reset wheel rotation
+            const spinner = document.getElementById('wheelSpinner');
+            currentRotation = 0;
+            spinner.style.transition = 'none';
+            spinner.style.transform = 'rotate(0deg)';
+            setTimeout(() => {
+                spinner.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+            }, 10);
+        };
+
         window.spinWheel = function() {
             const giveawayId = document.getElementById('winnerGiveawaySelect').value;
             if (!giveawayId) return;
 
-            const giveawayEntries = entries.filter(e => e.giveawayId === giveawayId);
-            if (giveawayEntries.length === 0) return;
+            // Filter out already selected winners
+            const availableEntries = currentGiveawayEntries.filter(entry =>
+                !selectedWinners.some(winner => winner.email === entry.email)
+            );
+
+            if (availableEntries.length === 0) {
+                alert('All entries have been selected as winners!');
+                return;
+            }
 
             const spinner = document.getElementById('wheelSpinner');
             const spinBtn = document.getElementById('spinBtn');
+            const shuffleBtn = document.getElementById('shuffleBtn');
             const winnerDisplay = document.getElementById('winnerDisplay');
 
             spinBtn.disabled = true;
+            shuffleBtn.disabled = true;
             spinBtn.textContent = 'Spinning...';
             winnerDisplay.classList.add('hidden');
 
             // Calculate winner index first
-            const winnerIndex = Math.floor(Math.random() * giveawayEntries.length);
+            const winnerIndex = Math.floor(Math.random() * availableEntries.length);
 
             // Calculate rotation to land on winner
-            const anglePerSegment = 360 / giveawayEntries.length;
+            const anglePerSegment = 360 / availableEntries.length;
             const winnerAngle = winnerIndex * anglePerSegment;
 
             // Add extra spins (5-7 full rotations) plus the target angle
@@ -809,7 +980,13 @@
             spinner.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(async () => {
-                const winner = giveawayEntries[winnerIndex];
+                const winner = availableEntries[winnerIndex];
+
+                // Add winner to selected winners list
+                selectedWinners.push(winner);
+
+                // Remove winner from current entries
+                currentGiveawayEntries = currentGiveawayEntries.filter(entry => entry.email !== winner.email);
 
                 // Save winner to giveaway document
                 await updateDoc(doc(db, 'giveaways', giveawayId), {
@@ -839,7 +1016,16 @@
                 winnerDisplay.classList.remove('hidden');
 
                 spinBtn.disabled = false;
+                shuffleBtn.disabled = false;
                 spinBtn.textContent = 'Spin Again';
+
+                // Redraw wheel without the winner and update entries list
+                if (currentGiveawayEntries.length > 0) {
+                    setTimeout(() => {
+                        drawWheel(currentGiveawayEntries);
+                        updateEntriesList(currentGiveawayEntries);
+                    }, 2000);
+                }
             }, 4000);
         };
 
