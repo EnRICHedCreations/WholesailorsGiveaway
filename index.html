@@ -166,6 +166,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, addDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDp81P6uZyg7sl6XR0uAeqh8_BfJB9_Uj4",
@@ -179,6 +180,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const functions = getFunctions(app);
 
         let currentGiveaway = null;
         let allGiveaways = [];
@@ -364,6 +366,7 @@
                 if (currentGiveaway.type === 'lootbox') {
                     // Check if payment is required
                     if (currentGiveaway.requirePayment) {
+                        console.log('Payment required for lootbox:', currentGiveaway);
                         pendingEntryData = {
                             name: name.trim(),
                             email: email,
@@ -425,17 +428,30 @@
             const giveaway = allGiveaways.find(g => g.id === id);
             if (!giveaway || giveaway.status !== 'active') return;
 
+            console.log('Opening modal for giveaway:', giveaway);
+
             currentGiveaway = {
                 id: giveaway.id,
                 name: giveaway.name,
                 description: giveaway.description,
                 annualMemberOnly: giveaway.annualMemberOnly || false,
                 type: giveaway.type || 'spinner',
-                rewards: giveaway.rewards || []
+                rewards: giveaway.rewards || [],
+                requirePayment: giveaway.requirePayment || false,
+                price: giveaway.price || 0
             };
+
+            console.log('Current giveaway set to:', currentGiveaway);
+
             document.getElementById('modalTitle').textContent = giveaway.name;
             document.getElementById('modalDescription').textContent = giveaway.description;
             document.getElementById('entryModal').classList.remove('hidden');
+        };
+
+        window.closePaymentModal = function() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            document.getElementById('card-errors').classList.add('hidden');
+            pendingEntryData = null;
         };
 
         window.closeLootboxModal = function() {
@@ -450,10 +466,16 @@
             pendingEntryData = null;
         };
 
+        window.closeLootboxModal = function() {
+            document.getElementById('lootboxModal').classList.add('hidden');
+            document.getElementById('lootboxResult').classList.add('hidden');
+            document.getElementById('lootboxAnimation').classList.remove('hidden');
+        };
+
         // Initialize Stripe
         function initializeStripe() {
             // Replace with your Stripe publishable key
-            stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE');
+            stripe = Stripe('pk_test_51R5Y8NAx8O8w8H7oIFLgVatofs1msdzC2XPkmeOITtLhEPp3qb6beDEowjaUk5Jc5AqVDOM9HanVtf2BmYUUzjQo00d6enG7Kk');
             const elements = stripe.elements();
             cardElement = elements.create('card', {
                 style: {
@@ -486,36 +508,55 @@
 
         // Handle payment
         window.handlePayment = async function() {
-            if (!pendingEntryData) return;
+            console.log('handlePayment called, pendingEntryData:', pendingEntryData);
+            console.log('currentGiveaway:', currentGiveaway);
+            
+            if (!pendingEntryData) {
+                console.error('No pending entry data');
+                alert('Session expired. Please try again.');
+                closePaymentModal();
+                return;
+            }
+
+            if (!currentGiveaway || !currentGiveaway.price || currentGiveaway.price <= 0) {
+                console.error('Invalid giveaway price:', currentGiveaway);
+                alert('Invalid giveaway price. Please refresh and try again.');
+                closePaymentModal();
+                return;
+            }
 
             const submitBtn = document.getElementById('paymentSubmitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Processing...';
 
             try {
-                // Create payment intent on server (you'll need to implement this endpoint)
-                const response = await fetch('/create-payment-intent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: Math.round(currentGiveaway.price * 100), // Stripe uses cents
-                        giveawayId: currentGiveaway.id
-                    })
+                const amountInCents = Math.round(currentGiveaway.price * 100);
+                console.log('Creating payment intent for:', amountInCents, 'cents');
+
+                // Create payment intent via Firebase Function
+                const createPaymentIntent = httpsCallable(functions, 'createPaymentIntent');
+                const result = await createPaymentIntent({
+                    amount: amountInCents,
+                    giveawayId: currentGiveaway.id,
+                    currency: 'usd'
                 });
 
-                const { clientSecret } = await response.json();
+                const { clientSecret } = result.data;
+                console.log('Got client secret, confirming payment...');
 
                 // Confirm payment
                 const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
                     payment_method: {
                         card: cardElement,
                         billing_details: {
-                            email: pendingEntryData.email
+                            email: pendingEntryData.email,
+                            name: pendingEntryData.name
                         }
                     }
                 });
 
                 if (error) {
+                    console.error('Payment confirmation error:', error);
                     const displayError = document.getElementById('card-errors');
                     displayError.textContent = error.message;
                     displayError.classList.remove('hidden');
@@ -525,14 +566,20 @@
                 }
 
                 if (paymentIntent.status === 'succeeded') {
+                    console.log('Payment succeeded! Processing entry...');
                     // Payment successful, process entry
+                    // Save the entry data before closing modal (which clears pendingEntryData)
+                    const entryDataToProcess = { ...pendingEntryData };
                     closePaymentModal();
-                    await processLootboxEntry(pendingEntryData);
+                    await processLootboxEntry(entryDataToProcess);
+                    loadGiveaways(); // Refresh the giveaways to update entry count
                 }
 
             } catch (error) {
                 console.error('Payment error:', error);
-                alert('Payment failed. Please try again.');
+                const displayError = document.getElementById('card-errors');
+                displayError.textContent = error.message || 'Payment failed. Please try again.';
+                displayError.classList.remove('hidden');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Pay Now';
             }
@@ -557,22 +604,34 @@
 
         // Process lootbox entry
         async function processLootboxEntry(entryData) {
+            console.log('Processing lootbox entry with data:', entryData);
+            
+            if (!currentGiveaway || !currentGiveaway.rewards || currentGiveaway.rewards.length === 0) {
+                console.error('Invalid giveaway or no rewards:', currentGiveaway);
+                alert('Error: Giveaway configuration is invalid.');
+                return;
+            }
+            
             const wonReward = currentGiveaway.rewards[Math.floor(Math.random() * currentGiveaway.rewards.length)];
 
-            await addDoc(collection(db, 'entries'), {
-                giveawayId: currentGiveaway.id,
-                giveawayName: currentGiveaway.name,
-                name: entryData.name,
-                email: entryData.email,
-                timestamp: new Date().toISOString(),
-                memberData: entryData.memberData,
-                reward: wonReward,
-                paid: currentGiveaway.requirePayment || false,
-                amount: currentGiveaway.requirePayment ? currentGiveaway.price : 0
-            });
+            try {
+                await addDoc(collection(db, 'entries'), {
+                    giveawayId: currentGiveaway.id,
+                    giveawayName: currentGiveaway.name,
+                    name: entryData.name || 'Unknown',
+                    email: entryData.email || 'unknown@email.com',
+                    timestamp: new Date().toISOString(),
+                    memberData: entryData.memberData || {},
+                    reward: wonReward,
+                    paid: currentGiveaway.requirePayment || false,
+                    amount: currentGiveaway.requirePayment ? currentGiveaway.price : 0
+                });
 
-            closeModal();
-            showLootboxAnimation(currentGiveaway.rewards, wonReward);
+                showLootboxAnimation(currentGiveaway.rewards, wonReward);
+            } catch (error) {
+                console.error('Error saving entry:', error);
+                alert('Payment successful but there was an error saving your entry. Please contact support.');
+            }
         }
 
         // Lootbox animation
