@@ -92,7 +92,7 @@
 
     <!-- Navigation -->
     <nav id="mainNav" class="hidden bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center space-x-3">
                     <img src="https://wholesailors.com/wp-content/uploads/2025/09/Wholesailors-Academy-V2.webp" alt="Wholesailors" class="h-12 w-auto">
@@ -109,7 +109,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div id="mainContent" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div id="mainContent" class="hidden w-full px-4 sm:px-6 lg:px-8 py-12">
         <!-- Tabs -->
         <div class="bg-zinc-900 rounded-xl border border-gray-800 mb-8">
             <div class="border-b border-gray-800">
@@ -191,19 +191,26 @@
                             <!-- Wheel Section -->
                             <div class="lg:col-span-2">
                                 <div class="text-center">
-                                    <div class="relative w-96 h-96 mx-auto mb-8">
+                                    <div class="relative w-[768px] h-[768px] mx-auto mb-8">
                                         <!-- Pointer -->
                                         <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-8 z-20">
-                                            <div class="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[30px] border-l-transparent border-r-transparent border-t-red-500 drop-shadow-lg"></div>
+                                            <div class="w-0 h-0 border-l-[40px] border-r-[40px] border-t-[60px] border-l-transparent border-r-transparent border-t-red-500 drop-shadow-lg"></div>
                                         </div>
 
                                         <!-- Spinning Wheel -->
-                                        <svg id="wheelSpinner" class="w-full h-full" viewBox="0 0 400 400" style="transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);">
+                                        <svg id="wheelSpinner" class="w-full h-full" viewBox="0 0 800 800" style="transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);">
                                             <g id="wheelSegments"></g>
 
-                                            <!-- Center Circle -->
-                                            <circle cx="200" cy="200" r="30" fill="#171717" stroke="#b79956" stroke-width="4"/>
-                                            <circle cx="200" cy="200" r="15" fill="#b79956"/>
+                                            <!-- Center Image -->
+                                            <defs>
+                                                <clipPath id="centerClip">
+                                                    <circle cx="400" cy="400" r="80"/>
+                                                </clipPath>
+                                            </defs>
+                                            <image href="https://wholesailors.com/wp-content/uploads/2025/09/Wholesailors-Academy-V2.webp"
+                                                   x="320" y="320" width="160" height="160"
+                                                   clip-path="url(#centerClip)" preserveAspectRatio="xMidYMid slice"/>
+                                            <circle cx="400" cy="400" r="80" fill="none" stroke="#b79956" stroke-width="8"/>
                                         </svg>
                                     </div>
 
@@ -359,7 +366,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, deleteDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDp81P6uZyg7sl6XR0uAeqh8_BfJB9_Uj4",
@@ -751,13 +758,25 @@
 
         async function deleteGiveaway(giveawayId) {
             try {
-                // Delete the giveaway document
+                // First, delete all entries associated with this giveaway
+                const entriesQuery = query(collection(db, 'entries'), where('giveawayId', '==', giveawayId));
+                const entriesSnapshot = await getDocs(entriesQuery);
+
+                const deletePromises = [];
+                entriesSnapshot.forEach((entryDoc) => {
+                    deletePromises.push(deleteDoc(doc(db, 'entries', entryDoc.id)));
+                });
+
+                // Wait for all entries to be deleted
+                await Promise.all(deletePromises);
+
+                // Then delete the giveaway document
                 await deleteDoc(doc(db, 'giveaways', giveawayId));
 
                 // Reload data to reflect changes
                 await loadData();
 
-                alert('Giveaway deleted successfully');
+                alert(`Giveaway and ${deletePromises.length} associated entries deleted successfully`);
             } catch (error) {
                 console.error('Error deleting giveaway:', error);
                 alert('Error deleting giveaway. Please try again.');
@@ -807,10 +826,10 @@
                 const startRad = (startAngle * Math.PI) / 180;
                 const endRad = (endAngle * Math.PI) / 180;
 
-                const x1 = 200 + 180 * Math.cos(startRad);
-                const y1 = 200 + 180 * Math.sin(startRad);
-                const x2 = 200 + 180 * Math.cos(endRad);
-                const y2 = 200 + 180 * Math.sin(endRad);
+                const x1 = 400 + 360 * Math.cos(startRad);
+                const y1 = 400 + 360 * Math.sin(startRad);
+                const x2 = 400 + 360 * Math.cos(endRad);
+                const y2 = 400 + 360 * Math.sin(endRad);
 
                 const largeArcFlag = anglePerSegment > 180 ? 1 : 0;
 
@@ -839,19 +858,19 @@
 
                 // Create segment
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                const d = `M 200 200 L ${x1} ${y1} A 180 180 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+                const d = `M 400 400 L ${x1} ${y1} A 360 360 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
                 path.setAttribute('d', d);
                 path.setAttribute('fill', `url(#${gradientId})`);
                 path.setAttribute('stroke', '#171717');
-                path.setAttribute('stroke-width', '2');
+                path.setAttribute('stroke-width', '4');
                 svg.appendChild(path);
 
                 // Add text - positioned to radiate outward from center
                 const textAngle = startAngle + anglePerSegment / 2;
                 const textRad = (textAngle * Math.PI) / 180;
-                const textRadius = 110;
-                const textX = 200 + textRadius * Math.cos(textRad);
-                const textY = 200 + textRadius * Math.sin(textRad);
+                const textRadius = 220;
+                const textX = 400 + textRadius * Math.cos(textRad);
+                const textY = 400 + textRadius * Math.sin(textRad);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', textX);
@@ -859,7 +878,7 @@
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dominant-baseline', 'middle');
                 text.setAttribute('fill', '#ffffff');
-                text.setAttribute('font-size', numSegments > 15 ? '8' : numSegments > 10 ? '10' : '12');
+                text.setAttribute('font-size', numSegments > 15 ? '16' : numSegments > 10 ? '20' : '24');
                 text.setAttribute('font-weight', 'bold');
                 // Rotate text to read from center outward along the radius
                 text.setAttribute('transform', `rotate(${textAngle}, ${textX}, ${textY})`);
@@ -869,11 +888,11 @@
 
                 // Calculate max characters based on number of segments
                 let maxChars;
-                if (numSegments > 20) maxChars = 6;
-                else if (numSegments > 15) maxChars = 8;
-                else if (numSegments > 10) maxChars = 10;
-                else if (numSegments > 5) maxChars = 12;
-                else maxChars = 15;
+                if (numSegments > 20) maxChars = 12;
+                else if (numSegments > 15) maxChars = 16;
+                else if (numSegments > 10) maxChars = 20;
+                else if (numSegments > 5) maxChars = 24;
+                else maxChars = 30;
 
                 const displayText = displayName.length > maxChars ? displayName.substring(0, maxChars - 2) + '..' : displayName;
                 text.textContent = displayText;
