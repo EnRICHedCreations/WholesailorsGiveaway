@@ -123,6 +123,9 @@
                     <button onclick="switchTab('winner')" id="tab-winner" class="tab-btn py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-300 font-medium">
                         Select Winner
                     </button>
+                    <button onclick="switchTab('winners')" id="tab-winners" class="tab-btn py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-300 font-medium">
+                        Winners
+                    </button>
                 </nav>
             </div>
 
@@ -212,9 +215,26 @@
                                                    clip-path="url(#centerClip)" preserveAspectRatio="xMidYMid slice"/>
                                             <circle cx="400" cy="400" r="80" fill="none" stroke="#b79956" stroke-width="8"/>
                                         </svg>
+
+                                        <!-- Winner Display Overlay -->
+                                        <div id="winnerDisplay" class="hidden absolute inset-0 flex items-center justify-center z-30">
+                                            <div class="gradient-gold rounded-2xl p-12 text-white shadow-2xl border-4 border-yellow-500 max-w-md">
+                                                <svg class="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                                </svg>
+                                                <h3 class="text-4xl font-bold mb-4">🎉 Winner! 🎉</h3>
+                                                <p id="winnerName" class="text-3xl font-semibold"></p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="flex space-x-4 justify-center mb-8">
+                                        <button id="clearWinnersBtn" onclick="clearWinners()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition">
+                                            🔄 Clear All Winners
+                                        </button>
+                                        <button id="removeLastWinnerBtn" onclick="removeLastWinner()" class="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition">
+                                            ↶ Remove Last Winner
+                                        </button>
                                         <button id="shuffleBtn" onclick="shuffleWheel()" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition">
                                             🔀 Shuffle Wheel
                                         </button>
@@ -222,19 +242,28 @@
                                             Spin to Win!
                                         </button>
                                     </div>
-
-                                    <div id="winnerDisplay" class="hidden gradient-gold rounded-2xl p-8 text-white">
-                                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                                        </svg>
-                                        <h3 class="text-3xl font-bold mb-2">🎉 Winner! 🎉</h3>
-                                        <p id="winnerEmail" class="text-2xl font-semibold"></p>
-                                    </div>
                                 </div>
                             </div>
 
                             <!-- Entries Sidebar -->
-                            <div class="lg:col-span-1">
+                            <div class="lg:col-span-1 space-y-4">
+                                <!-- Winners List -->
+                                <div class="bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 rounded-xl border-2 border-yellow-600/50 p-4">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-yellow-500 font-bold text-lg flex items-center">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                            </svg>
+                                            Winners
+                                        </h4>
+                                        <span id="winnersCount" class="px-3 py-1 bg-yellow-600/50 rounded-full text-sm font-semibold text-yellow-200">0</span>
+                                    </div>
+                                    <div id="winnersList" class="space-y-2 max-h-[300px] overflow-y-auto">
+                                        <p class="text-gray-400 text-sm text-center py-4">No winners selected</p>
+                                    </div>
+                                </div>
+
+                                <!-- Entries List -->
                                 <div class="bg-zinc-800 rounded-xl border border-gray-700 p-4">
                                     <div class="flex items-center justify-between mb-4">
                                         <h4 class="text-white font-bold text-lg">Entries</h4>
@@ -253,6 +282,42 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
                         <p>No entries yet for this giveaway</p>
+                    </div>
+                </div>
+
+                <!-- Winners Tab -->
+                <div id="content-winners" class="tab-content hidden">
+                    <h3 class="text-xl font-bold text-white mb-6">All Winners</h3>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-400 font-semibold mb-2">Filter by Giveaway</label>
+                        <select id="winnersFilterSelect" onchange="loadWinners()" class="w-full px-4 py-3 bg-zinc-800 border border-gray-700 rounded-lg focus:border-yellow-600 focus:outline-none text-white">
+                            <option value="">All Giveaways</option>
+                        </select>
+                    </div>
+
+                    <div id="winnersTable" class="bg-zinc-800 rounded-xl border border-gray-700 overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-zinc-900">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold">Winner Name</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold">Email</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold">Giveaway</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold">Date Won</th>
+                                    <th class="px-6 py-4 text-left text-gray-400 font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="winnersTableBody" class="divide-y divide-gray-700">
+                                <!-- Winners will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="noWinnersMessage" class="hidden text-center text-gray-500 py-12">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                        </svg>
+                        <p>No winners selected yet</p>
                     </div>
                 </div>
             </div>
@@ -387,6 +452,7 @@
         let currentRotation = 0;
         let currentEditGiveawayId = null;
         let currentGiveawayEntries = [];
+        let originalGiveawayEntries = [];
         let selectedWinners = [];
 
         // Check authentication state
@@ -487,7 +553,92 @@
             updateOverview();
             updateGiveawaysList();
             updateWinnerSelect();
+            updateWinnersFilter();
         }
+
+        // Update winners filter dropdown
+        function updateWinnersFilter() {
+            const select = document.getElementById('winnersFilterSelect');
+            const giveawaysWithWinners = giveaways.filter(g => g.winners && g.winners.length > 0);
+
+            select.innerHTML = '<option value="">All Giveaways</option>' +
+                giveawaysWithWinners.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        }
+
+        // Load winners
+        window.loadWinners = function() {
+            const filterValue = document.getElementById('winnersFilterSelect').value;
+            const winnersTableBody = document.getElementById('winnersTableBody');
+            const winnersTable = document.getElementById('winnersTable');
+            const noWinnersMessage = document.getElementById('noWinnersMessage');
+
+            // Get all giveaways with winners and flatten the array
+            let winnersData = [];
+            giveaways
+                .filter(g => g.winners && g.winners.length > 0)
+                .filter(g => !filterValue || g.id === filterValue)
+                .forEach(g => {
+                    g.winners.forEach((winner, index) => {
+                        winnersData.push({
+                            giveawayId: g.id,
+                            name: winner.name || 'No name provided',
+                            email: winner.email,
+                            giveawayName: g.name,
+                            wonDate: winner.timestamp || 'N/A',
+                            winnerIndex: index
+                        });
+                    });
+                });
+
+            if (winnersData.length === 0) {
+                winnersTable.classList.add('hidden');
+                noWinnersMessage.classList.remove('hidden');
+                return;
+            }
+
+            winnersTable.classList.remove('hidden');
+            noWinnersMessage.classList.add('hidden');
+
+            winnersTableBody.innerHTML = winnersData.map(winner => `
+                <tr class="hover:bg-zinc-700/50">
+                    <td class="px-6 py-4 text-white font-semibold">${winner.name}</td>
+                    <td class="px-6 py-4 text-gray-300">${winner.email}</td>
+                    <td class="px-6 py-4 text-gray-300">${winner.giveawayName}</td>
+                    <td class="px-6 py-4 text-gray-400">${new Date(winner.wonDate).toLocaleDateString()}</td>
+                    <td class="px-6 py-4">
+                        <button onclick="confirmDeleteWinner('${winner.giveawayId}', '${winner.giveawayName.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition">
+                            Delete All Winners
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // Delete winner
+        window.confirmDeleteWinner = function(giveawayId, giveawayName) {
+            if (confirm(`Are you sure you want to remove ALL winners from "${giveawayName}"? This will reset the giveaway and allow you to select new winners.`)) {
+                deleteWinner(giveawayId);
+            }
+        };
+
+        async function deleteWinner(giveawayId) {
+            try {
+                // Clear winners array from giveaway document and reset status to active
+                await updateDoc(doc(db, 'giveaways', giveawayId), {
+                    winners: [],
+                    status: 'active'
+                });
+
+                // Reload data to reflect changes
+                await loadData();
+                loadWinners();
+
+                alert('All winners removed successfully. Giveaway has been reset to active status. You can now select new winners.');
+            } catch (error) {
+                console.error('Error removing winners:', error);
+                alert('Error removing winners. Please try again.');
+            }
+        };
 
         // Update overview
         function updateOverview() {
@@ -569,10 +720,12 @@
                                 <span>${giveawayEntries.length} entries</span>
                             </div>
                         </div>
-                        ${giveaway.status === 'ended' && giveaway.winner ? `
+                        ${giveaway.status === 'ended' && giveaway.winners && giveaway.winners.length > 0 ? `
                             <div class="mb-4 p-4 gradient-gold rounded-lg">
-                                <p class="text-white font-bold mb-1">🎉 Winner</p>
-                                <p class="text-white text-lg">${giveaway.winner.name || 'Winner Selected'}</p>
+                                <p class="text-white font-bold mb-1">🎉 ${giveaway.winners.length > 1 ? 'Winners' : 'Winner'}</p>
+                                ${giveaway.winners.map((winner, index) => `
+                                    <p class="text-white text-sm ${index > 0 ? 'mt-1' : ''}">${index + 1}. ${winner.name || 'Winner Selected'}</p>
+                                `).join('')}
                             </div>
                         ` : ''}
                         ${giveawayEntries.length > 0 ? `
@@ -619,6 +772,11 @@
             document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-500');
             document.getElementById(`tab-${tab}`).classList.add('border-yellow-600', 'text-yellow-600');
             document.getElementById(`content-${tab}`).classList.remove('hidden');
+
+            // Load winners data when winners tab is opened
+            if (tab === 'winners') {
+                loadWinners();
+            }
         };
 
         // Create giveaway modal
@@ -928,6 +1086,33 @@
             `).join('');
         }
 
+        // Update winners list
+        function updateWinnersList(winners) {
+            const winnersList = document.getElementById('winnersList');
+            const winnersCount = document.getElementById('winnersCount');
+
+            winnersCount.textContent = winners.length;
+
+            if (winners.length === 0) {
+                winnersList.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No winners selected</p>';
+                return;
+            }
+
+            winnersList.innerHTML = winners.map((winner, index) => `
+                <div class="p-3 bg-gradient-to-br from-yellow-900/60 to-yellow-800/40 rounded-lg border border-yellow-600/40 hover:border-yellow-500/60 transition">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center text-xs font-bold text-white">
+                            🏆
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-yellow-300 font-bold text-sm truncate">${winner.name || 'Winner'}</p>
+                            <p class="text-yellow-400/70 text-xs truncate">${new Date(winner.timestamp).toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // Winner selection
         document.getElementById('winnerGiveawaySelect').addEventListener('change', (e) => {
             const giveawayId = e.target.value;
@@ -945,7 +1130,14 @@
             }
 
             currentGiveawayEntries = entries.filter(e => e.giveawayId === giveawayId);
-            selectedWinners = [];
+            originalGiveawayEntries = [...currentGiveawayEntries];
+
+            // Load existing winners from database
+            const currentGiveaway = giveaways.find(g => g.id === giveawayId);
+            selectedWinners = currentGiveaway?.winners || [];
+
+            // Update winners list
+            updateWinnersList(selectedWinners);
 
             if (currentGiveawayEntries.length === 0) {
                 winnerSection.classList.add('hidden');
@@ -1000,6 +1192,172 @@
             }, 10);
         };
 
+        // Clear winners and reset wheel
+        window.clearWinners = async function() {
+            if (originalGiveawayEntries.length === 0) {
+                alert('No giveaway selected');
+                return;
+            }
+
+            if (selectedWinners.length === 0) {
+                alert('No winners to clear');
+                return;
+            }
+
+            if (confirm(`Clear ${selectedWinners.length} winner(s) and reset the wheel?`)) {
+                const giveawayId = document.getElementById('winnerGiveawaySelect').value;
+                if (!giveawayId) {
+                    alert('No giveaway selected');
+                    return;
+                }
+
+                try {
+                    // Verify document exists first
+                    const giveawayRef = doc(db, 'giveaways', giveawayId);
+                    const giveawaySnap = await getDoc(giveawayRef);
+
+                    if (!giveawaySnap.exists()) {
+                        alert('Giveaway not found');
+                        return;
+                    }
+
+                    // Clear winners array from database
+                    await updateDoc(giveawayRef, {
+                        winners: []
+                    });
+
+                    // Reset winners array
+                    selectedWinners = [];
+
+                    // Restore all original entries
+                    currentGiveawayEntries = [...originalGiveawayEntries];
+
+                    // Redraw wheel with all entries
+                    drawWheel(currentGiveawayEntries);
+                    updateEntriesList(currentGiveawayEntries);
+                    updateWinnersList([]);
+
+                    // Hide winner display
+                    document.getElementById('winnerDisplay').classList.add('hidden');
+
+                    // Reset wheel rotation
+                    const spinner = document.getElementById('wheelSpinner');
+                    currentRotation = 0;
+                    spinner.style.transition = 'none';
+                    spinner.style.transform = 'rotate(0deg)';
+                    setTimeout(() => {
+                        spinner.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+                    }, 10);
+
+                    // Reset spin button
+                    const spinBtn = document.getElementById('spinBtn');
+                    spinBtn.textContent = 'Spin to Win!';
+                    spinBtn.disabled = false;
+
+                    // Reload data to update UI (preserve selection)
+                    const currentGiveawayId = giveawayId;
+                    await loadData();
+                    document.getElementById('winnerGiveawaySelect').value = currentGiveawayId;
+
+                    alert('Winners cleared! All entries restored.');
+                } catch (error) {
+                    console.error('Error clearing winners:', error);
+                    console.error('Error details:', error.message, error.code);
+                    alert(`Error clearing winners: ${error.message}. Please try again.`);
+                }
+            }
+        };
+
+        // Remove last winner
+        window.removeLastWinner = async function() {
+            if (selectedWinners.length === 0) {
+                alert('No winners to remove');
+                return;
+            }
+
+            const lastWinner = selectedWinners[selectedWinners.length - 1];
+
+            if (confirm(`Remove winner "${lastWinner.name || lastWinner.email}"?`)) {
+                const giveawayId = document.getElementById('winnerGiveawaySelect').value;
+                if (!giveawayId) {
+                    alert('No giveaway selected');
+                    return;
+                }
+
+                try {
+                    // Verify document exists and get current winners
+                    const giveawayRef = doc(db, 'giveaways', giveawayId);
+                    const giveawaySnap = await getDoc(giveawayRef);
+
+                    if (!giveawaySnap.exists()) {
+                        alert('Giveaway not found');
+                        return;
+                    }
+
+                    const currentWinners = giveawaySnap.data().winners || [];
+
+                    if (currentWinners.length === 0) {
+                        alert('No winners in database to remove');
+                        return;
+                    }
+
+                    // Remove last winner
+                    currentWinners.pop();
+
+                    // Update database with new array
+                    await updateDoc(giveawayRef, {
+                        winners: currentWinners
+                    });
+
+                    // Update local selectedWinners
+                    selectedWinners = [...currentWinners];
+
+                    // Add winner back to available entries
+                    const originalEntry = originalGiveawayEntries.find(e => e.email === lastWinner.email);
+                    if (originalEntry && !currentGiveawayEntries.some(e => e.email === lastWinner.email)) {
+                        currentGiveawayEntries.push(originalEntry);
+                    }
+
+                    // Redraw wheel with restored entry
+                    drawWheel(currentGiveawayEntries);
+                    updateEntriesList(currentGiveawayEntries);
+                    updateWinnersList(selectedWinners);
+
+                    // Hide winner display
+                    document.getElementById('winnerDisplay').classList.add('hidden');
+
+                    // Reset wheel rotation
+                    const spinner = document.getElementById('wheelSpinner');
+                    currentRotation = 0;
+                    spinner.style.transition = 'none';
+                    spinner.style.transform = 'rotate(0deg)';
+                    setTimeout(() => {
+                        spinner.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+                    }, 10);
+
+                    // Reset spin button
+                    const spinBtn = document.getElementById('spinBtn');
+                    if (selectedWinners.length > 0) {
+                        spinBtn.textContent = 'Spin Again';
+                    } else {
+                        spinBtn.textContent = 'Spin to Win!';
+                    }
+                    spinBtn.disabled = false;
+
+                    // Reload data (preserve selection)
+                    const currentGiveawayId = giveawayId;
+                    await loadData();
+                    document.getElementById('winnerGiveawaySelect').value = currentGiveawayId;
+
+                    alert('Last winner removed!');
+                } catch (error) {
+                    console.error('Error removing last winner:', error);
+                    console.error('Error details:', error.message, error.code);
+                    alert(`Error removing last winner: ${error.message}. Please try again.`);
+                }
+            }
+        };
+
         window.spinWheel = function() {
             const giveawayId = document.getElementById('winnerGiveawaySelect').value;
             if (!giveawayId) return;
@@ -1027,16 +1385,27 @@
             // Calculate winner index first
             const winnerIndex = Math.floor(Math.random() * availableEntries.length);
 
-            // Calculate rotation to land on winner
+            // Calculate rotation to land on winner (arrow is at top)
             const anglePerSegment = 360 / availableEntries.length;
-            const winnerAngle = winnerIndex * anglePerSegment;
+            // Segments start at -90 degrees (top), so we calculate from there
+            const targetAngle = (winnerIndex * anglePerSegment) + (anglePerSegment / 2);
 
-            // Add extra spins (5-7 full rotations) plus the target angle
+            // Add extra spins (5-7 full rotations) plus rotate to the target
             const extraSpins = 5 + Math.floor(Math.random() * 3);
-            const totalRotation = (360 * extraSpins) + (360 - winnerAngle) + (anglePerSegment / 2);
+            // We want the wheel to stop so the winning segment is at top (0 degrees relative to pointer)
+            const totalRotation = (360 * extraSpins) - targetAngle;
 
-            currentRotation += totalRotation;
-            spinner.style.transform = `rotate(${currentRotation}deg)`;
+            // Reset rotation to 0 first for consistent behavior
+            currentRotation = 0;
+            spinner.style.transition = 'none';
+            spinner.style.transform = 'rotate(0deg)';
+
+            // Apply rotation after a brief moment
+            setTimeout(() => {
+                spinner.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+                spinner.style.transform = `rotate(${totalRotation}deg)`;
+                currentRotation = totalRotation;
+            }, 50);
 
             setTimeout(async () => {
                 const winner = availableEntries[winnerIndex];
@@ -1047,45 +1416,57 @@
                 // Remove winner from current entries
                 currentGiveawayEntries = currentGiveawayEntries.filter(entry => entry.email !== winner.email);
 
-                // Save winner to giveaway document
+                // Get current giveaway to access existing winners array
+                const giveawayDoc = await getDoc(doc(db, 'giveaways', giveawayId));
+                const currentWinners = giveawayDoc.data().winners || [];
+
+                // Add new winner to winners array
+                const newWinner = {
+                    name: winner.name || '',
+                    email: winner.email,
+                    timestamp: new Date().toISOString()
+                };
+                currentWinners.push(newWinner);
+
+                // Save updated winners array to giveaway document (keep as active for spin again)
                 await updateDoc(doc(db, 'giveaways', giveawayId), {
-                    winner: {
-                        name: winner.name || '',
-                        email: winner.email,
-                        timestamp: new Date().toISOString()
-                    }
+                    winners: currentWinners
                 });
 
-                // Reload data to show winner
-                await loadData();
+                // Redraw wheel immediately without the winner
+                if (currentGiveawayEntries.length > 0) {
+                    drawWheel(currentGiveawayEntries);
+                    updateEntriesList(currentGiveawayEntries);
+                }
 
-                // Display name if available, otherwise email
-                const winnerDisplay = document.getElementById('winnerDisplay');
-                const winnerEmailEl = document.getElementById('winnerEmail');
+                // Reload data to show winner (preserve selection)
+                const currentGiveawayId = giveawayId;
+                await loadData();
+                document.getElementById('winnerGiveawaySelect').value = currentGiveawayId;
+
+                // Update winners list with current winners
+                updateWinnersList(selectedWinners);
+
+                // Display name only
+                const winnerNameEl = document.getElementById('winnerName');
 
                 if (winner.name) {
-                    winnerEmailEl.innerHTML = `
-                        <div class="text-2xl font-semibold mb-2">${winner.name}</div>
-                        <div class="text-lg opacity-90">${winner.email}</div>
-                    `;
+                    winnerNameEl.textContent = winner.name;
                 } else {
-                    winnerEmailEl.textContent = winner.email;
+                    winnerNameEl.textContent = 'Winner Selected';
                 }
 
                 winnerDisplay.classList.remove('hidden');
 
+                // Auto-hide winner display after 3 seconds
+                setTimeout(() => {
+                    winnerDisplay.classList.add('hidden');
+                }, 3000);
+
                 spinBtn.disabled = false;
                 shuffleBtn.disabled = false;
                 spinBtn.textContent = 'Spin Again';
-
-                // Redraw wheel without the winner and update entries list
-                if (currentGiveawayEntries.length > 0) {
-                    setTimeout(() => {
-                        drawWheel(currentGiveawayEntries);
-                        updateEntriesList(currentGiveawayEntries);
-                    }, 2000);
-                }
-            }, 4000);
+            }, 4100);
         };
 
         // Load data on start
