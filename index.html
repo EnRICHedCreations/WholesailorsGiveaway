@@ -63,6 +63,27 @@
         </div>
     </section>
 
+    <!-- Lootbox Modal -->
+    <div id="lootboxModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 text-center">
+            <h2 class="text-3xl font-bold text-white mb-4">🎁 Opening Loot Box...</h2>
+            <div id="lootboxAnimation" class="my-8">
+                <div class="relative h-64 flex items-center justify-center">
+                    <div id="rollingRewards" class="text-2xl font-bold text-white"></div>
+                </div>
+            </div>
+            <div id="lootboxResult" class="hidden">
+                <div class="gradient-gold rounded-xl p-6 mb-4">
+                    <p class="text-white text-lg font-semibold mb-2">🎉 You Won!</p>
+                    <p id="wonReward" class="text-white text-2xl font-bold"></p>
+                </div>
+                <button onclick="closeLootboxModal()" class="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Entry Modal -->
     <div id="entryModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-zinc-900 rounded-2xl p-8 max-w-md w-full border border-gray-800">
@@ -156,13 +177,17 @@
                 const entryCount = entries.filter(e => e.giveawayId === giveaway.id).length;
                 const isActive = giveaway.status === 'active';
                 const hasWinner = giveaway.status === 'ended' && giveaway.winner;
+                const isLootbox = giveaway.type === 'lootbox';
 
                 return `
                     <div class="bg-zinc-900 rounded-2xl overflow-hidden border border-gray-800 transform hover:scale-105 transition-transform duration-300">
                         <div class="gradient-gold p-8">
-                            <svg class="w-12 h-12 text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                            </svg>
+                            <div class="flex items-center justify-between mb-4">
+                                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                                ${isLootbox ? '<span class="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-bold">🎁 LOOT BOX</span>' : ''}
+                            </div>
                             <h3 class="text-2xl font-bold text-white mb-2">${giveaway.name}</h3>
                             <p class="text-gray-200">${giveaway.description}</p>
                         </div>
@@ -295,7 +320,27 @@
                     return;
                 }
 
-                // Add entry
+                // Handle lootbox giveaway
+                if (currentGiveaway.type === 'lootbox') {
+                    const wonReward = currentGiveaway.rewards[Math.floor(Math.random() * currentGiveaway.rewards.length)];
+
+                    await addDoc(collection(db, 'entries'), {
+                        giveawayId: currentGiveaway.id,
+                        giveawayName: currentGiveaway.name,
+                        name: name.trim(),
+                        email: email,
+                        timestamp: new Date().toISOString(),
+                        memberData: memberCheck.data,
+                        reward: wonReward
+                    });
+
+                    // Show lootbox animation
+                    closeModal();
+                    showLootboxAnimation(currentGiveaway.rewards, wonReward);
+                    return;
+                }
+
+                // Add entry for spinner giveaway
                 await addDoc(collection(db, 'entries'), {
                     giveawayId: currentGiveaway.id,
                     giveawayName: currentGiveaway.name,
@@ -340,11 +385,19 @@
                 id: giveaway.id,
                 name: giveaway.name,
                 description: giveaway.description,
-                annualMemberOnly: giveaway.annualMemberOnly || false
+                annualMemberOnly: giveaway.annualMemberOnly || false,
+                type: giveaway.type || 'spinner',
+                rewards: giveaway.rewards || []
             };
             document.getElementById('modalTitle').textContent = giveaway.name;
             document.getElementById('modalDescription').textContent = giveaway.description;
             document.getElementById('entryModal').classList.remove('hidden');
+        };
+
+        window.closeLootboxModal = function() {
+            document.getElementById('lootboxModal').classList.add('hidden');
+            document.getElementById('lootboxResult').classList.add('hidden');
+            document.getElementById('lootboxAnimation').classList.remove('hidden');
         };
 
         // Close modal
@@ -363,6 +416,32 @@
         document.getElementById('emailInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.submitEntry();
         });
+
+        // Lootbox animation
+        function showLootboxAnimation(rewards, wonReward) {
+            document.getElementById('lootboxModal').classList.remove('hidden');
+            const rollingEl = document.getElementById('rollingRewards');
+
+            let counter = 0;
+            const rollInterval = setInterval(() => {
+                const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
+                rollingEl.textContent = randomReward;
+                counter++;
+
+                if (counter > 20) {
+                    clearInterval(rollInterval);
+                    // Show final result
+                    setTimeout(() => {
+                        rollingEl.textContent = wonReward;
+                        setTimeout(() => {
+                            document.getElementById('lootboxAnimation').classList.add('hidden');
+                            document.getElementById('wonReward').textContent = wonReward;
+                            document.getElementById('lootboxResult').classList.remove('hidden');
+                        }, 500);
+                    }, 200);
+                }
+            }, 100);
+        }
 
         // Load on start
         loadGiveaways();
