@@ -212,7 +212,7 @@
             grid.innerHTML = giveaways.map(giveaway => {
                 const entryCount = entries.filter(e => e.giveawayId === giveaway.id).length;
                 const isActive = giveaway.status === 'active';
-                const hasWinner = giveaway.status === 'ended' && giveaway.winner;
+                const hasWinners = giveaway.status === 'ended' && giveaway.winners && giveaway.winners.length > 0;
                 const isLootbox = giveaway.type === 'lootbox';
 
                 return `
@@ -258,15 +258,17 @@
                                     ${isActive ? 'Active' : 'Ended'}
                                 </span>
                             </div>
-                            ${hasWinner ? `
+                            ${hasWinners ? `
                                 <div class="mb-4 p-4 bg-gradient-to-r from-yellow-600/20 to-yellow-700/20 border border-yellow-600/30 rounded-lg">
                                     <div class="flex items-center space-x-2 mb-2">
                                         <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
                                         </svg>
-                                        <p class="text-yellow-500 font-bold text-sm">🎉 Winner</p>
+                                        <p class="text-yellow-500 font-bold text-sm">🎉 ${giveaway.winners.length > 1 ? 'Winners' : 'Winner'}</p>
                                     </div>
-                                    <p class="text-white font-semibold text-lg">${giveaway.winner.name || 'Winner Selected'}</p>
+                                    ${giveaway.winners.map((winner, index) => `
+                                        <p class="text-white font-semibold ${index > 0 ? 'mt-2' : ''}">${index + 1}. ${winner.name || 'Winner Selected'}</p>
+                                    `).join('')}
                                 </div>
                             ` : ''}
                             <button
