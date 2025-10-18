@@ -710,24 +710,33 @@
                 // Add text - positioned to radiate outward from center
                 const textAngle = startAngle + anglePerSegment / 2;
                 const textRad = (textAngle * Math.PI) / 180;
-                const textRadius = 120;
+                const textRadius = 110;
                 const textX = 200 + textRadius * Math.cos(textRad);
                 const textY = 200 + textRadius * Math.sin(textRad);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', textX);
                 text.setAttribute('y', textY);
-                text.setAttribute('text-anchor', 'start');
+                text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dominant-baseline', 'middle');
                 text.setAttribute('fill', '#ffffff');
-                text.setAttribute('font-size', numSegments > 15 ? '10' : numSegments > 10 ? '12' : '14');
+                text.setAttribute('font-size', numSegments > 15 ? '8' : numSegments > 10 ? '10' : '12');
                 text.setAttribute('font-weight', 'bold');
                 // Rotate text to read from center outward along the radius
                 text.setAttribute('transform', `rotate(${textAngle}, ${textX}, ${textY})`);
 
                 // Use name if available, otherwise just show entry number
                 const displayName = giveawayEntries[i].name || `Entry #${i + 1}`;
-                const displayText = displayName.length > 20 ? displayName.substring(0, 17) + '...' : displayName;
+
+                // Calculate max characters based on number of segments
+                let maxChars;
+                if (numSegments > 20) maxChars = 6;
+                else if (numSegments > 15) maxChars = 8;
+                else if (numSegments > 10) maxChars = 10;
+                else if (numSegments > 5) maxChars = 12;
+                else maxChars = 15;
+
+                const displayText = displayName.length > maxChars ? displayName.substring(0, maxChars - 2) + '..' : displayName;
                 text.textContent = displayText;
 
                 svg.appendChild(text);
